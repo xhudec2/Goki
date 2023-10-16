@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"project/database"
+	"project/scheduler"
 )
 
 // func printall(decks database.Decks, db *sql.DB) {
@@ -51,13 +52,7 @@ func print_deck(deck_id database.Id, db *sql.DB) {
 	}
 }
 
-func main() {
-
-	db, err := database.Open_db("Anki2/User 1/collection.anki2")
-	if err != nil {
-		return
-	}
-	defer db.Close()
+func Test_db(db *sql.DB) {
 	decks, err := database.Get_decks(db)
 	if err != nil {
 		return
@@ -74,5 +69,23 @@ func main() {
 		case "e", "E", "exit", "EXIT":
 			return
 		}
+	}
+}
+
+func main() {
+	//test_db()
+	db, err := database.Open_db("Anki2/User 1/collection.anki2")
+	if err != nil {
+		return
+	}
+	defer db.Close()
+	qs := scheduler.Scheduler_init()
+	err = qs.Fill_scheduler(db)
+	if err != nil {
+		return
+	}
+	err = qs.Study(db)
+	if err != nil {
+		return
 	}
 }
