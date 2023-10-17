@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"database/sql"
 	"fmt"
-	"os"
 	"project/database"
 	"strings"
 
@@ -18,15 +17,6 @@ type Scheduler struct {
 	Learing *q.Queue
 	Repeat  *q.Queue
 }
-
-type Review_opt string
-
-const (
-	AGAIN Review_opt = "again"
-	HARD  Review_opt = "hard"
-	GOOD  Review_opt = "good"
-	EASY  Review_opt = "easy"
-)
 
 const Q_SIZE = 32 // Q_SIZE == deck card limit ?
 
@@ -71,16 +61,6 @@ func Study_card(card string, cards database.Cards, db *sql.DB) (err error) {
 	// It should also change the db based on the "grade" given to the card while studying
 	// return the grade as well to know where to store the card next
 	fmt.Println(cards[database.Id(card)])
-	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Printf("grade: ")
-	scanner.Scan()
-	switch Review_opt(scanner.Text()) {
-	case HARD:
-	case GOOD:
-	case EASY:
-	default:
-	}
-
 	return nil
 }
 

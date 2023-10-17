@@ -20,19 +20,5 @@ func main() {
 }
 
 func main() {
-	//test_db()
-	db, err := database.Open_db("Anki2/User 1/collection.anki2")
-	if err != nil {
-		return
-	}
-	defer db.Close()
-	qs := scheduler.Scheduler_init()
-	err = qs.Fill_scheduler(db)
-	if err != nil {
-		return
-	}
-	err = qs.Study(db)
-	if err != nil {
-		return
-	}
+	Test_Scheduler()
 }
