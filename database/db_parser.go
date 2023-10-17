@@ -23,6 +23,7 @@ type Card struct {
 }
 
 type Cards map[Id]Card
+type Card_ids []string
 
 func Open_db(filepath string) (db *sql.DB, err error) {
 	db, err = sql.Open("sqlite3", filepath)
@@ -54,7 +55,7 @@ func Get_decks(db *sql.DB) (decks Decks, err error) {
 	return
 }
 
-func Get_Cards(deck_id Id, db *sql.DB) (cards Cards, err error) {
+func Get_Cards(deck_id Id, db *sql.DB) (card_ids Card_ids, cards Cards, err error) {
 	rows, err := db.Query(fmt.Sprintf("SELECT id FROM cards WHERE did == %s", deck_id))
 	if err != nil {
 		fmt.Println("Error querying DB cards:", err)
@@ -63,6 +64,7 @@ func Get_Cards(deck_id Id, db *sql.DB) (cards Cards, err error) {
 	defer rows.Close()
 
 	cards = make(Cards, 32)
+	card_ids = make(Card_ids, 0, 32)
 	for rows.Next() {
 		var card_id string
 		err = rows.Scan(&card_id)
@@ -71,16 +73,13 @@ func Get_Cards(deck_id Id, db *sql.DB) (cards Cards, err error) {
 			return
 		}
 		cards[Id(card_id)] = Card{}
+		card_ids = append(card_ids, card_id)
 	}
 
 	return
 }
 
-func Get_notes(cards Cards, db *sql.DB) (err error) {
-	card_ids := make([]string, 0, len(cards))
-	for card := range cards {
-		card_ids = append(card_ids, string(card))
-	}
+func Get_notes(card_ids Card_ids, cards Cards, db *sql.DB) (err error) {
 	rows, err := db.Query(fmt.Sprintf("SELECT id, flds FROM notes WHERE id IN (%s)", strings.Join(card_ids, ",")))
 	if err != nil {
 		fmt.Println("Error querying DB notes:", err)
