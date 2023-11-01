@@ -1,15 +1,20 @@
 package main
 
 import (
-	"project/database"
+	. "project/collation"
+	. "project/database"
 )
 
 func main() {
-	db, err := database.Open_db("Anki2/User 1/collection.anki2")
-	if err != nil {
-		return
-	}
-	defer db.Close()
-	database.Import_db(db, "Anki2/User 1/collection_copy.anki2")
-
+	RegisterCollation()
+	//	db, err := OpenDB(MAIN_DB)
+	//	if err != nil {
+	//		return
+	//	}
+	//	export, err := OpenDB("test/export.anki2")
+	//	if err != nil {
+	//		return
+	//	}
+	//	ImportDB[Card](db, export, "cards")
+	ExportDB("test", "test")
 }
