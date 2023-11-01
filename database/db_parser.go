@@ -1,130 +1,55 @@
 package database
 
 import (
-	"database/sql"
-	"fmt"
-	"strings"
+	"log"
 
-	_ "github.com/mattn/go-sqlite3"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 const CARD_DELIMITER = "\x1f"
-const attributes = "id, nid, did, queue, due, ivl, reps, lapses, left"
 
-type Name string
-type Decks map[int]Name
+type ID int
 
-type Field struct {
-	Front string
-	Back  string
+type Gettable interface {
+	Deck | Card | Note
+	GetID() ID
 }
 
-// not sure if this is optimal, good for now ig
-type Card struct {
-	Id     int
-	Nid    int
-	Did    int
-	Q_type int
-	Queue  int
-	Due    int
-	Ivl    int
-	Factor int
-	Reps   int
-	Lapses int
-	Left   int
-	Mod    int
-	Ord    int
-	Usn    int
-	Odue   int
-	Odid   int
-	Flags  int
-	Data   string
+func (d Deck) GetID() ID {
+	return ID(d.ID)
 }
 
-type Cards map[int]Card
-type Card_ids []string
+func (c Card) GetID() ID {
+	return ID(c.ID)
+}
 
-func Open_db(filepath string) (db *sql.DB, err error) {
-	db, err = sql.Open("sqlite3", filepath)
+func (n Note) GetID() ID {
+	return ID(n.ID)
+}
+
+type Table[T Gettable] map[ID]T
+
+// This function is nearly the same as the one in gorm.sqlite,
+// however, it uses a collating function defined in collation/collation.go
+func Open(dsn string) gorm.Dialector {
+	return &sqlite.Dialector{DSN: dsn, DriverName: "sqlite_unicase"}
+}
+
+func OpenDB(filepath string) (db *gorm.DB, err error) {
+	db, err = gorm.Open(Open(filepath))
 	if err != nil {
-		fmt.Println("Error opening DB:", err)
+		log.Fatal("Error opening DB:", err)
 		return
 	}
 	return
 }
 
-func Get_decks(db *sql.DB) (decks Decks, err error) {
-	rows, err := db.Query("SELECT id, name FROM decks")
-	if err != nil {
-		fmt.Println("Error querying DB decks:", err)
-		return
+func DBGetter[T Gettable](db *gorm.DB, data *Table[T]) {
+	var listData []T
+	db.Find(&listData)
+
+	for i := 0; i < len(listData); i++ {
+		(*data)[listData[i].GetID()] = listData[i]
 	}
-	defer rows.Close()
-
-	decks = make(Decks, 4)
-	for rows.Next() {
-		var id int
-		var name string
-		err = rows.Scan(&id, &name)
-		if err != nil {
-			fmt.Println("Error scanning decks rows:", err)
-			return
-		}
-		decks[id] = Name(name)
-	}
-	return
-}
-
-func Get_Cards(deck_id int, db *sql.DB) (card_ids Card_ids, cards Cards, err error) {
-	rows, err := db.Query(fmt.Sprintf("SELECT %s FROM cards WHERE did == %d", attributes, deck_id))
-	if err != nil {
-		fmt.Println("Error querying DB cards:", err)
-		return
-	}
-	defer rows.Close()
-
-	cards = make(Cards, 32)
-	card_ids = make(Card_ids, 0, 32)
-	for rows.Next() {
-		new_card := Card{}
-		err = rows.Scan(
-			&new_card.Id, &new_card.Nid, &new_card.Did, &new_card.Q_type, &new_card.Due,
-			&new_card.Ivl, &new_card.Reps, &new_card.Lapses, &new_card.Left)
-
-		if err != nil {
-			fmt.Println("Error scanning cards rows:", err)
-			return
-		}
-		cards[new_card.Id] = new_card
-		card_ids = append(card_ids, fmt.Sprintf("%d", new_card.Id))
-	}
-
-	return
-}
-
-func Get_notes(card_ids Card_ids, cards Cards, db *sql.DB) (err error) {
-	rows, err := db.Query(fmt.Sprintf("SELECT id, flds FROM notes WHERE id IN (%s)", strings.Join(card_ids, ",")))
-	if err != nil {
-		fmt.Println("Error querying DB notes:", err)
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var card_id int
-		var flds string
-		err = rows.Scan(&card_id, &flds)
-		if err != nil {
-			fmt.Println("Error scanning notes rows:", err)
-			return
-		}
-		//have to rewrite this, again..
-
-		//card := strings.Split(flds, CARD_DELIMITER)
-		//fmt.Println(cards[card_id].Field)
-		//updated_card := cards[card_id]
-		//updated_card.Field = Field{Front: card[0], Back: card[1]}
-		//cards[card_id] = updated_card
-	}
-	return
 }
