@@ -4,35 +4,72 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
+
+	"gorm.io/gorm"
 )
 
 const DB_TEMPLATE_PATH = "db_media/template.anki2"
 const MEDIA_TEMPLATE_PATH = "db_media/media.template.db2"
 const MAIN_DB = "Anki2/User 1/collection.anki2"
 
-func Export_db(decks string, name string) (err error) {
-	apkg_export, err := os.Create(name + ".apkg")
+func ExportDB(decks string, name string) (err error) {
+	apkgExport, err := os.Create(name + ".apkg")
 	if err != nil {
 		fmt.Println("Error creating .apkg file:", err)
 		return
 	}
-	defer apkg_export.Close()
+	defer apkgExport.Close()
 
-	zip_writer := zip.NewWriter(apkg_export)
+	zipWriter := zip.NewWriter(apkgExport)
 	if err != nil {
 		panic(err)
 	}
 
-	defer zip_writer.Close()
+	defer zipWriter.Close()
 
-	write_data(decks, zip_writer, name)
+	CreateEmptyTemplate(name)
+	//defer os.Remove(name + ".anki2")
+
+	exportDB, err := OpenDB(name + ".anki2")
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	source, err := OpenDB(MAIN_DB)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	CopyDatabase(source, exportDB)
+	ZipFiles(zipWriter, name)
 
 	return
 }
 
-func Create_empty_template(name string) (err error) {
+func CopyDatabase(source *gorm.DB, target *gorm.DB) error {
+	if err := ImportDB[Deck](source, target, "decks"); err != nil {
+		fmt.Println("Error importing decks:", err)
+		log.Fatal(err)
+		return err
+	}
+	if err := ImportDB[Card](source, target, "cards"); err != nil {
+		fmt.Println("Error importing decks:", err)
+		log.Fatal(err)
+		return err
+	}
+	if err := ImportDB[Note](source, target, "notes"); err != nil {
+		fmt.Println("Error importing decks:", err)
+		log.Fatal(err)
+		return err
+	}
+	return nil
+}
+
+func CreateEmptyTemplate(name string) (err error) {
 	cmd := exec.Command("cp", DB_TEMPLATE_PATH, name+".anki2")
 	if err = cmd.Run(); err != nil {
 		fmt.Println("Error creating template", err)
@@ -41,33 +78,34 @@ func Create_empty_template(name string) (err error) {
 	return
 }
 
-func write_data(decks string, zip_writer *zip.Writer, name string) (err error) {
-	collection, err := os.Open(DB_TEMPLATE_PATH)
-	if err != nil {
-		panic(err)
+func ZipFiles(zipWriter *zip.Writer, name string) (err error) {
+	files := []string{name + ".anki2", MEDIA_TEMPLATE_PATH}
+	for _, file := range files {
+		if err = AddFileToZip(zipWriter, file); err != nil {
+			fmt.Println("Error adding file to zip:", err)
+			return
+		}
 	}
-	defer collection.Close()
+	return
+}
 
-	temp_writer, err := zip_writer.Create(name + ".anki2")
+func AddFileToZip(zipWriter *zip.Writer, file string) (err error) {
+	fileToZip, err := os.Open(file)
 	if err != nil {
-		panic(err)
+		fmt.Println("Error opening file:", err)
+		return
 	}
-	if _, err := io.Copy(temp_writer, collection); err != nil {
+	defer fileToZip.Close()
+
+	writer, err := zipWriter.Create(filepath.Base(file))
+	if err != nil {
 		panic(err)
 	}
 
-	media, err := os.Open(MEDIA_TEMPLATE_PATH)
+	_, err = io.Copy(writer, fileToZip)
 	if err != nil {
-		panic(err)
-	}
-	defer media.Close()
-
-	temp_writer, err = zip_writer.Create(name + ".media.db2")
-	if err != nil {
-		panic(err)
-	}
-	if _, err := io.Copy(temp_writer, media); err != nil {
-		panic(err)
+		fmt.Println("Error copying file:", err)
+		return
 	}
 	return
 }

@@ -4,7 +4,7 @@ type Card struct {
 	ID     uint `gorm:"primaryKey"`
 	Nid    int
 	Did    int
-	Qrd    int
+	Ord    int
 	Mod    int
 	Usn    int
 	Type   int
