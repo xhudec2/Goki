@@ -45,9 +45,13 @@ func OpenDB(filepath string) (db *gorm.DB, err error) {
 	return
 }
 
-func DBGetter[T Gettable](db *gorm.DB, data *Table[T]) {
+func DBGetter[T Gettable](db *gorm.DB, data *Table[T], where string) {
 	var listData []T
-	db.Find(&listData)
+	if where == "" {
+		db.Find(&listData)
+	} else {
+		db.Where(where).Find(&listData)
+	}
 
 	for i := 0; i < len(listData); i++ {
 		(*data)[listData[i].GetID()] = listData[i]
