@@ -1,11 +1,15 @@
 package database
 
+// https://github.com/ankidroid/Anki-Android/wiki/Database-Structure
+
+// Most of these are unused, only here not to break the code
+
 type Card struct {
-	ID     uint `gorm:"primaryKey"`
+	ID     ID `gorm:"primaryKey;autoCreateTime:milli"`
 	Nid    int
 	Did    int
 	Ord    int
-	Mod    int
+	Mod    int `gorm:"autoUpdateTime:milli"`
 	Usn    int
 	Type   int
 	Queue  int
@@ -22,9 +26,9 @@ type Card struct {
 }
 
 type Col struct {
-	ID     int `gorm:"primaryKey"`
+	ID     ID `gorm:"primaryKey;autoCreateTime:milli"`
 	Crt    int
-	Mod    int
+	Mod    int `gorm:"autoUpdateTime:milli"`
 	Scm    int
 	Ver    int
 	Dty    int
@@ -38,7 +42,7 @@ type Col struct {
 }
 
 type Deck struct {
-	ID        int `gorm:"primaryKey"`
+	ID        ID `gorm:"primaryKey;autoCreateTime:milli"`
 	Name      string
 	MtimeSecs int
 	Usn       int
@@ -47,10 +51,10 @@ type Deck struct {
 }
 
 type Note struct {
-	ID    int `gorm:"primaryKey"`
+	ID    ID `gorm:"primaryKey;autoCreateTime:milli"`
 	Guid  string
 	Mid   int
-	Mod   int
+	Mod   int `gorm:"autoUpdateTime:milli"`
 	Usn   int
 	Tags  string
 	Flds  string
@@ -58,4 +62,14 @@ type Note struct {
 	Csum  int
 	Flags int
 	Data  string
+}
+
+type NoteFlds struct {
+	Nid  ID
+	Flds string
+}
+
+type StudyNote struct {
+	Front string
+	Back  string
 }
