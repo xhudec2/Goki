@@ -1,13 +1,12 @@
 package scheduler
 
 import (
-	"bufio"
-	"database/sql"
 	"fmt"
-	"project/database"
-	"strings"
+	"log"
+	. "project/database"
 
 	q "github.com/Workiva/go-datastructures/queue"
+	"gorm.io/gorm"
 )
 
 type Scheduler struct {
@@ -19,8 +18,9 @@ type Scheduler struct {
 }
 
 const Q_SIZE = 32 // Q_SIZE == deck card limit ?
+const DEFAULT_WHERE = ""
 
-func Scheduler_init() (qs *Scheduler) {
+func SchedulerInit() (qs *Scheduler) {
 	return &Scheduler{
 		New:     q.New(Q_SIZE),
 		Learing: q.New(Q_SIZE),
@@ -28,78 +28,69 @@ func Scheduler_init() (qs *Scheduler) {
 	}
 }
 
-func (queues *Scheduler) Fill_scheduler(card_ids database.Card_ids, db *sql.DB) (err error) {
-	rows, err := db.Query(fmt.Sprintf("SELECT id, queue FROM cards WHERE id IN (%s)", strings.Join(card_ids, ",")))
-	if err != nil {
-		fmt.Println("Error querrying db: ", err)
-		return
-	}
-	for rows.Next() {
-		var id, card_q string
-		err = rows.Scan(&id, &card_q)
-		if err != nil {
-			fmt.Println("Error scanning rows")
-			return
-		}
-		switch card_q {
-		case "0":
-			queues.New.Put(id)
-		case "1", "3":
-			queues.Learing.Put(id)
-		case "2":
-			queues.Repeat.Put(id)
+func (queues *Scheduler) FillScheduler(cards *Table[Card]) (err error) {
+	for key := range *cards {
+		switch (*cards)[key].Queue {
+		case 0:
+			queues.New.Put((*cards)[key].ID)
+		case 1, 3:
+			queues.Learing.Put((*cards)[key].ID)
+		case 2:
+			queues.Repeat.Put((*cards)[key].ID)
 		default:
-			fmt.Println("Incorrect card_q number of card: ", card_q)
+			fmt.Println("Incorrect card_q number of card: ", (*cards)[key].Queue)
 			return
 		}
 	}
 	return
 }
 
-func Study_card(card string, cards database.Cards, db *sql.DB) (err error) {
-	// TODO: unfinished, only prints the card for now
-	// It should also change the db based on the "grade" given to the card while studying
-	// return the grade as well to know where to store the card next
-	fmt.Println(cards[database.Id(card)])
-	return nil
-}
-
-func Study_q(q *q.Queue, cards database.Cards, db *sql.DB) (err error) {
+func StudyQ(q *q.Queue, cards *Table[Card], db *gorm.DB) (err error) {
 	len := q.Len()
 	if len <= 0 {
 		return
 	}
-
-	q_items, err := q.Get(len)
+	qItems, err := q.Get(len)
 	if err != nil {
 		return err
 	}
-
-	for _, card := range q_items {
-		card, ok := card.(string)
+	IDs := make([]ID, len)
+	for i, id := range qItems {
+		id, ok := id.(ID)
+		IDs[i] = id
 		if !ok {
-			fmt.Println("card nok: ", card)
+			fmt.Println("card nok: ", id)
 			continue
 		}
-		Study_card(card, cards, db)
+	}
+	flds := make(map[ID]StudyNote, len)
+	GetFlds(IDs, db, &flds)
+
+	for _, id := range IDs {
+		card := (*cards)[id]
+		err = StudyCard(&card, db, &flds)
+		if err != nil {
+			log.Fatal(err)
+			continue
+		}
 	}
 
 	return
 }
 
-func (queues *Scheduler) Study(cards database.Cards, db *sql.DB) (err error) {
-	fmt.Println("New\n")
-	err = Study_q(queues.New, cards, db)
+func (queues *Scheduler) Study(cards *Table[Card], db *gorm.DB) (err error) {
+	fmt.Println("New")
+	err = StudyQ(queues.New, cards, db)
 	if err != nil {
 		fmt.Println("New failed")
 	}
-	fmt.Println("Learning\n")
-	err = Study_q(queues.Learing, cards, db)
+	fmt.Println("Learning")
+	err = StudyQ(queues.Learing, cards, db)
 	if err != nil {
 		fmt.Println("Learning failed")
 	}
-	fmt.Println("Repeat\n")
-	err = Study_q(queues.Repeat, cards, db)
+	fmt.Println("Repeat")
+	err = StudyQ(queues.Repeat, cards, db)
 	if err != nil {
 		fmt.Println("Repeat failed")
 	}
