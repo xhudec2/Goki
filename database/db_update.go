@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	. "project/tables"
 
 	"gorm.io/gorm"
 )

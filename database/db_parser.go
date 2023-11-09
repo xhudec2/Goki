@@ -3,28 +3,14 @@ package database
 import (
 	"log"
 
+	. "project/tables"
+
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-const CARD_DELIMITER = "\x1f"
-
-type ID uint64
-
 type Gettable interface {
 	GetID() ID
-}
-
-func (d Deck) GetID() ID {
-	return ID(d.ID)
-}
-
-func (c Card) GetID() ID {
-	return ID(c.ID)
-}
-
-func (n Note) GetID() ID {
-	return ID(n.ID)
 }
 
 type Table[T Gettable] map[ID]T

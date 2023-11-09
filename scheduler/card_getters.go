@@ -3,6 +3,7 @@ package scheduler
 import (
 	"fmt"
 	. "project/database"
+	. "project/tables"
 
 	q "github.com/daviddengcn/go-villa"
 )

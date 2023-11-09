@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	. "project/tables"
 
 	"gorm.io/gorm"
 )

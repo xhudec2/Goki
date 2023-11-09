@@ -6,10 +6,8 @@ import (
 	. "project/collation"
 	. "project/database"
 	. "project/scheduler"
-	"time"
+	. "project/tables"
 )
-
-const SECONDS_IN_DAY = 86400
 
 func main() {
 	RegisterCollation()
@@ -25,12 +23,8 @@ func main() {
 		fmt.Println("Error querrying db: ", err)
 		return
 	}
-	col := Col{}
-	if err := db.Table("col").Take(&col).Error; err != nil {
-		log.Fatal(err)
-		return
-	}
-	today := (int(time.Now().Unix()) - col.Crt) / SECONDS_IN_DAY
+	today := TodayRelative(db)
+	fmt.Println("Today: ", today)
 	scheduler := InitScheduler()
 	IDs, err := scheduler.FillScheduler(&cards, today)
 	if err != nil {
