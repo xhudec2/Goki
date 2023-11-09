@@ -6,10 +6,10 @@ package database
 
 type Card struct {
 	ID     ID `gorm:"primaryKey;autoCreateTime:milli"`
-	Nid    int
-	Did    int
+	Nid    ID
+	Did    ID
 	Ord    int
-	Mod    int `gorm:"autoUpdateTime:milli"`
+	Mod    int `gorm:"autoUpdateTime"`
 	Usn    int
 	Type   int
 	Queue  int
@@ -28,7 +28,7 @@ type Card struct {
 type Col struct {
 	ID     ID `gorm:"primaryKey;autoCreateTime:milli"`
 	Crt    int
-	Mod    int `gorm:"autoUpdateTime:milli"`
+	Mod    int `gorm:"autoUpdateTime"`
 	Scm    int
 	Ver    int
 	Dty    int
@@ -54,7 +54,7 @@ type Note struct {
 	ID    ID `gorm:"primaryKey;autoCreateTime:milli"`
 	Guid  string
 	Mid   int
-	Mod   int `gorm:"autoUpdateTime:milli"`
+	Mod   int `gorm:"autoUpdateTime"`
 	Usn   int
 	Tags  string
 	Flds  string

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	. "project/database"
+	"time"
 
 	q "github.com/daviddengcn/go-villa"
 	"gorm.io/gorm"
@@ -19,6 +20,7 @@ type Scheduler struct {
 
 const Q_SIZE = 32 // Q_SIZE == deck card limit ?
 const DEFAULT_WHERE = ""
+const COLLAPSE_TIME = 1200
 
 func InitScheduler() (qs *Scheduler) {
 	cmp := func(a, b interface{}) int {
@@ -38,25 +40,30 @@ func InitScheduler() (qs *Scheduler) {
 	}
 }
 
-func (queues *Scheduler) FillScheduler(cards *Table[Card]) (IDsPtr *[]ID, err error) {
+func (queues *Scheduler) FillScheduler(cards *Table[Card], today int) (IDsPtr *[]ID, err error) {
 	IDs := make([]ID, 0, len(*cards))
 	for key := range *cards {
 		card := (*cards)[key]
+		IDs = append(IDs, card.ID)
 		switch (*cards)[key].Queue {
 		case 0:
 			queues.New.Push(&card)
 		case 1, 3:
+			if card.Due > int(time.Now().Unix())*1000+COLLAPSE_TIME {
+				continue
+			}
 			queues.Learing.Push(&card)
 		case 2:
+			if card.Due > today {
+				continue
+			}
 			queues.Repeat.Push(&card)
 		case -1:
+			fmt.Println("Suspended card: ", (*cards)[key].Queue)
 			continue
 		default:
-			_, err = fmt.Println("Incorrect card_q number of card: ", (*cards)[key].Queue)
-			log.Fatal(err)
-			return nil, err
+			log.Fatal("incorrect card_q number of card: ", (*cards)[key].Queue)
 		}
-		IDs = append(IDs, card.ID)
 	}
 	IDsPtr = &IDs
 	return
@@ -64,46 +71,20 @@ func (queues *Scheduler) FillScheduler(cards *Table[Card]) (IDsPtr *[]ID, err er
 
 func (queues *Scheduler) Study(cards *Table[Card], db *gorm.DB, flds *map[ID]StudyNote) (err error) {
 	for i := 0; i < Q_SIZE; i++ {
-		c, err := queues.getCard(cards)
+		c, err := queues.GetCard(cards)
 		if c == nil || err != nil {
 			log.Fatal(err)
 			return err
 		}
 
-		if err = StudyCard(c, db, flds); err != nil {
+		again, err := StudyCard(c, db, flds)
+		if err != nil {
 			log.Fatal(err)
 			return err
 		}
+		if again {
+			fmt.Println("Card added to queue")
+		}
 	}
 	return
-}
-
-// The Pop method of PriorityQueue does not return nil if the queue is empty...
-// This is a workaround
-func pop(q *q.PriorityQueue) (*Card, error) {
-	if q.Len() <= 0 {
-		return nil, fmt.Errorf("no cards in queue")
-	}
-	cardItem := q.Pop()
-	card, _ := cardItem.(*Card)
-	return card, nil
-}
-
-func (queues *Scheduler) getCard(cards *Table[Card]) (card *Card, err error) {
-
-	card, err = pop(queues.New)
-	if err == nil {
-		return card, nil
-	}
-
-	card, err = pop(queues.Learing)
-	if err == nil {
-		return card, nil
-	}
-
-	card, err = pop(queues.Repeat)
-	if err == nil {
-		return card, nil
-	}
-	return nil, fmt.Errorf("no cards in queues")
 }

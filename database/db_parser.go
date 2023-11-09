@@ -9,10 +9,9 @@ import (
 
 const CARD_DELIMITER = "\x1f"
 
-type ID int
+type ID uint64
 
 type Gettable interface {
-	Deck | Card | Note
 	GetID() ID
 }
 
