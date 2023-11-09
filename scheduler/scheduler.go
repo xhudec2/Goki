@@ -5,94 +5,105 @@ import (
 	"log"
 	. "project/database"
 
-	q "github.com/Workiva/go-datastructures/queue"
+	q "github.com/daviddengcn/go-villa"
 	"gorm.io/gorm"
 )
 
 type Scheduler struct {
 	// these Q names are the same as those used in the .apkg database
 	// will change them to suit my usage more in the future
-	New     *q.Queue
-	Learing *q.Queue
-	Repeat  *q.Queue
+	New     *q.PriorityQueue
+	Learing *q.PriorityQueue
+	Repeat  *q.PriorityQueue
 }
 
 const Q_SIZE = 32 // Q_SIZE == deck card limit ?
 const DEFAULT_WHERE = ""
 
-func SchedulerInit() (qs *Scheduler) {
+func InitScheduler() (qs *Scheduler) {
+	cmp := func(a, b interface{}) int {
+		card := a.(*Card)
+		other := b.(*Card)
+		if card.Due < other.Due {
+			return 1
+		} else if card.Due > other.Due {
+			return -1
+		}
+		return 0
+	}
 	return &Scheduler{
-		New:     q.New(Q_SIZE),
-		Learing: q.New(Q_SIZE),
-		Repeat:  q.New(Q_SIZE),
+		New:     q.NewPriorityQueueCap(cmp, Q_SIZE),
+		Learing: q.NewPriorityQueueCap(cmp, Q_SIZE),
+		Repeat:  q.NewPriorityQueueCap(cmp, Q_SIZE),
 	}
 }
 
-func (queues *Scheduler) FillScheduler(cards *Table[Card]) (err error) {
+func (queues *Scheduler) FillScheduler(cards *Table[Card]) (IDsPtr *[]ID, err error) {
+	IDs := make([]ID, 0, len(*cards))
 	for key := range *cards {
+		card := (*cards)[key]
 		switch (*cards)[key].Queue {
 		case 0:
-			queues.New.Put((*cards)[key].ID)
+			queues.New.Push(&card)
 		case 1, 3:
-			queues.Learing.Put((*cards)[key].ID)
+			queues.Learing.Push(&card)
 		case 2:
-			queues.Repeat.Put((*cards)[key].ID)
+			queues.Repeat.Push(&card)
+		case -1:
+			continue
 		default:
-			fmt.Println("Incorrect card_q number of card: ", (*cards)[key].Queue)
-			return
-		}
-	}
-	return
-}
-
-func StudyQ(q *q.Queue, cards *Table[Card], db *gorm.DB) (err error) {
-	len := q.Len()
-	if len <= 0 {
-		return
-	}
-	qItems, err := q.Get(len)
-	if err != nil {
-		return err
-	}
-	IDs := make([]ID, len)
-	for i, id := range qItems {
-		id, ok := id.(ID)
-		IDs[i] = id
-		if !ok {
-			fmt.Println("card nok: ", id)
-			continue
-		}
-	}
-	flds := make(map[ID]StudyNote, len)
-	GetFlds(IDs, db, &flds)
-
-	for _, id := range IDs {
-		card := (*cards)[id]
-		err = StudyCard(&card, db, &flds)
-		if err != nil {
+			_, err = fmt.Println("Incorrect card_q number of card: ", (*cards)[key].Queue)
 			log.Fatal(err)
-			continue
+			return nil, err
 		}
+		IDs = append(IDs, card.ID)
 	}
-
+	IDsPtr = &IDs
 	return
 }
 
-func (queues *Scheduler) Study(cards *Table[Card], db *gorm.DB) (err error) {
-	fmt.Println("New")
-	err = StudyQ(queues.New, cards, db)
-	if err != nil {
-		fmt.Println("New failed")
-	}
-	fmt.Println("Learning")
-	err = StudyQ(queues.Learing, cards, db)
-	if err != nil {
-		fmt.Println("Learning failed")
-	}
-	fmt.Println("Repeat")
-	err = StudyQ(queues.Repeat, cards, db)
-	if err != nil {
-		fmt.Println("Repeat failed")
+func (queues *Scheduler) Study(cards *Table[Card], db *gorm.DB, flds *map[ID]StudyNote) (err error) {
+	for i := 0; i < Q_SIZE; i++ {
+		c, err := queues.getCard(cards)
+		if c == nil || err != nil {
+			log.Fatal(err)
+			return err
+		}
+
+		if err = StudyCard(c, db, flds); err != nil {
+			log.Fatal(err)
+			return err
+		}
 	}
 	return
+}
+
+// The Pop method of PriorityQueue does not return nil if the queue is empty...
+// This is a workaround
+func pop(q *q.PriorityQueue) (*Card, error) {
+	if q.Len() <= 0 {
+		return nil, fmt.Errorf("no cards in queue")
+	}
+	cardItem := q.Pop()
+	card, _ := cardItem.(*Card)
+	return card, nil
+}
+
+func (queues *Scheduler) getCard(cards *Table[Card]) (card *Card, err error) {
+
+	card, err = pop(queues.New)
+	if err == nil {
+		return card, nil
+	}
+
+	card, err = pop(queues.Learing)
+	if err == nil {
+		return card, nil
+	}
+
+	card, err = pop(queues.Repeat)
+	if err == nil {
+		return card, nil
+	}
+	return nil, fmt.Errorf("no cards in queues")
 }

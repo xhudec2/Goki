@@ -10,18 +10,11 @@ import (
 
 func main() {
 	RegisterCollation()
-	db, err := OpenDB("export/1")
+	db, err := OpenDB(MAIN_DB)
 	if err != nil {
 		return
 	}
 	defer CloseDB(db)
-
-	//	export, err := OpenDB("test/export.anki2")
-	//	if err != nil {
-	//		return
-	//	}
-	//	ImportDB[Card](db, export, "cards")
-	// ExportDB("test", "test")
 
 	cards := make(Table[Card], Q_SIZE)
 	err = DBGetter[Card](db, &cards, DEFAULT_WHERE)
@@ -29,10 +22,16 @@ func main() {
 		fmt.Println("Error querrying db: ", err)
 		return
 	}
-	scheduler := SchedulerInit()
-	err = scheduler.FillScheduler(&cards)
+
+	scheduler := InitScheduler()
+	IDs, err := scheduler.FillScheduler(&cards)
 	if err != nil {
 		log.Fatal(err)
 	}
-	scheduler.Study(&cards, db)
+	flds := make(map[ID]StudyNote, len(cards))
+	err = GetFlds(IDs, db, &flds)
+	if err != nil {
+		return
+	}
+	scheduler.Study(&cards, db, &flds)
 }

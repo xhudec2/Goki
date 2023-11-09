@@ -15,8 +15,6 @@ func StudyCard(card *Card, db *gorm.DB, flds *map[ID]StudyNote) (err error) {
 	// It should also change the db based on the "grade" given to the card while studying
 	// return the grade as well to know where to store the card next
 
-	go card.UpdateCard(db)
-
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println(">", (*flds)[card.ID].Front)
 	scanner.Scan()
@@ -25,41 +23,40 @@ func StudyCard(card *Card, db *gorm.DB, flds *map[ID]StudyNote) (err error) {
 	fmt.Print("Grade: ")
 	scanner.Scan()
 	grade := scanner.Text()
-	fmt.Println(grade)
 
+	go card.UpdateCard(db, grade)
 	// updateCard
 
 	return nil
 }
 
-func (card *Card) UpdateCard(db *gorm.DB) {
+func (card *Card) UpdateCard(db *gorm.DB, grade string) {
 	card.Reps = 1
-	db.Model(Card{}).Where("id = ?", card.ID).Updates(Card{Reps: card.Reps, Factor: 2500})
+	db.Model(Card{}).Updates(*card)
 }
 
-func GetNids(cardIDs []ID, db *gorm.DB, nids *[]ID) (err error) {
+func GetNoteIDs(cardIDs []ID, db *gorm.DB, nids *[]ID) (err error) {
 
 	err = db.Model(Card{}).Select("nid").Find(nids, cardIDs).Error
 	if err != nil {
 		log.Fatal(err)
 		fmt.Println(err)
-
 	}
 	return
 }
 
-func GetFlds(cardIDs []ID, db *gorm.DB, flds *map[ID]StudyNote) (err error) {
+func GetFlds(cardIDs *[]ID, db *gorm.DB, flds *map[ID]StudyNote) (err error) {
 
 	type loader struct {
 		ID   ID
 		Flds string
 	}
-	load := make([]loader, len(cardIDs))
+	load := make([]loader, len(*cardIDs))
 
 	err = db.Table("notes").
 		Select("notes.id, notes.flds").
 		Joins("join cards on cards.nid = notes.id").
-		Find(&load, cardIDs).Error
+		Find(&load, *cardIDs).Error
 
 	for _, loaded := range load {
 		splitted := strings.Split(loaded.Flds, CARD_DELIMITER)
