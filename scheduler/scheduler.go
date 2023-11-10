@@ -63,14 +63,14 @@ func (queues *Scheduler) FillScheduler(cards *Table[Card], today int) (IDsPtr *[
 			fmt.Println("Suspended card: ", (*cards)[key].Queue)
 			continue
 		default:
-			log.Fatal("incorrect card_q number of card: ", (*cards)[key].Queue)
+			log.Fatal("incorrect card_q: ", (*cards)[key].Queue)
 		}
 	}
 	IDsPtr = &IDs
 	return
 }
 
-func (queues *Scheduler) Study(cards *Table[Card], db *gorm.DB, flds *map[ID]StudyNote) (err error) {
+func (queues *Scheduler) Study(cards *Table[Card], db *gorm.DB, conf *Config, flds *map[ID]StudyNote) (err error) {
 	for i := 0; i < Q_SIZE; i++ {
 		c, err := queues.GetCard(cards)
 		if c == nil || err != nil {
@@ -78,7 +78,7 @@ func (queues *Scheduler) Study(cards *Table[Card], db *gorm.DB, flds *map[ID]Stu
 			return err
 		}
 
-		again, err := StudyCard(c, db, flds)
+		again, err := StudyCard(c, db, conf, flds)
 		if err != nil {
 			log.Fatal(err)
 			return err

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 
 	"gorm.io/gorm"
 )
@@ -34,16 +35,21 @@ func (c Card) GetID() ID {
 }
 
 const (
-	NEW       = 0
-	LEARNING  = 1
-	REVIEW    = 2
-	SUSPENDED = -1
-	MINUTE    = 60
+	NEW            = 0
+	LEARNING       = 1
+	REVIEW         = 2
+	USER_SUSPENDED = 3
+	SUSPENDED      = -1
+)
+const (
+	DAY    = 86400
+	MINUTE = 60
+	HOUR   = 3600
 )
 
 const CARD_DELIMITER = "\x1f"
 
-func StudyCard(card *Card, db *gorm.DB, flds *map[ID]StudyNote) (bool, error) {
+func StudyCard(card *Card, db *gorm.DB, conf *Config, flds *map[ID]StudyNote) (bool, error) {
 	// TODO: unfinished, only prints the card for now
 	// It should also change the db based on the "grade" given to the card while studying
 	// return the grade as well to know where to store the card next
@@ -56,9 +62,11 @@ func StudyCard(card *Card, db *gorm.DB, flds *map[ID]StudyNote) (bool, error) {
 	fmt.Println((*flds)[card.ID].Back)
 	fmt.Print("Grade: ")
 	scanner.Scan()
-	grade := scanner.Text()
-
+	grade, err := strconv.Atoi(scanner.Text())
+	if err != nil {
+		return false, err
+	}
 	// updateCard
 
-	return card.UpdateCard(db, grade), nil
+	return card.UpdateCard(grade, db, conf), nil
 }

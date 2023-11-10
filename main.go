@@ -24,7 +24,6 @@ func main() {
 		return
 	}
 	today := TodayRelative(db)
-	fmt.Println("Today: ", today)
 	scheduler := InitScheduler()
 	IDs, err := scheduler.FillScheduler(&cards, today)
 	if err != nil {
@@ -36,6 +35,5 @@ func main() {
 	if err != nil {
 		return
 	}
-
-	scheduler.Study(&cards, db, &flds)
+	scheduler.Study(&cards, db, &CONFIG, &flds)
 }
