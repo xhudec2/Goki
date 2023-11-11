@@ -75,7 +75,7 @@ func (card *Card) updateRevCard(grade int, db *gorm.DB, config *Config) {
 		log.Fatal("Invalid grade")
 	}
 	card.Ivl = int(float64(card.Ivl) * factor)
-	card.Due = TodayRelative(db) + card.Ivl/1000
+	card.Due = TodayRelative(db) + card.Ivl
 }
 
 func (card *Card) graduateCard(level int, db *gorm.DB, config *Config) {
@@ -93,6 +93,7 @@ func (card *Card) revLapse(config *Config) {
 	card.Ivl = 0
 	card.Queue = LEARNING
 	card.Type = LEARNING
+
 	card.Due = now + config.Lapse.Delays[0]*MINUTE
 }
 
