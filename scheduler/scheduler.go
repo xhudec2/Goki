@@ -12,11 +12,9 @@ import (
 )
 
 type Scheduler struct {
-	// these Q names are the same as those used in the .apkg database
-	// will change them to suit my usage more in the future
 	New     *q.PriorityQueue
 	Learing *q.PriorityQueue
-	Repeat  *q.PriorityQueue
+	Review  *q.PriorityQueue
 }
 
 const Q_SIZE = 32 // Q_SIZE == deck card limit ?
@@ -37,33 +35,38 @@ func InitScheduler() (qs *Scheduler) {
 	return &Scheduler{
 		New:     q.NewPriorityQueueCap(cmp, Q_SIZE),
 		Learing: q.NewPriorityQueueCap(cmp, Q_SIZE),
-		Repeat:  q.NewPriorityQueueCap(cmp, Q_SIZE),
+		Review:  q.NewPriorityQueueCap(cmp, Q_SIZE),
 	}
+}
+
+func (queues *Scheduler) ScheduleCard(card *Card, today int) bool {
+	switch card.Queue {
+	case 0:
+		queues.New.Push(card)
+	case 1, 3:
+		if card.Due > int(time.Now().Unix())*1000+COLLAPSE_TIME {
+			return false
+		}
+		queues.Learing.Push(card)
+	case 2:
+		if card.Due > today {
+			return false
+		}
+		queues.Review.Push(card)
+	case -1:
+		fmt.Println("Suspended card: ", card.Queue)
+	default:
+		log.Fatal("incorrect card_q: ", card.Queue)
+	}
+	return true
 }
 
 func (queues *Scheduler) FillScheduler(cards *Table[Card], today int) (IDsPtr *[]ID, err error) {
 	IDs := make([]ID, 0, len(*cards))
 	for key := range *cards {
 		card := (*cards)[key]
-		IDs = append(IDs, card.ID)
-		switch (*cards)[key].Queue {
-		case 0:
-			queues.New.Push(&card)
-		case 1, 3:
-			if card.Due > int(time.Now().Unix())*1000+COLLAPSE_TIME {
-				continue
-			}
-			queues.Learing.Push(&card)
-		case 2:
-			if card.Due > today {
-				continue
-			}
-			queues.Repeat.Push(&card)
-		case -1:
-			fmt.Println("Suspended card: ", (*cards)[key].Queue)
-			continue
-		default:
-			log.Fatal("incorrect card_q: ", (*cards)[key].Queue)
+		if queues.ScheduleCard(&card, today) {
+			IDs = append(IDs, card.ID)
 		}
 	}
 	IDsPtr = &IDs
@@ -72,18 +75,18 @@ func (queues *Scheduler) FillScheduler(cards *Table[Card], today int) (IDsPtr *[
 
 func (queues *Scheduler) Study(cards *Table[Card], db *gorm.DB, conf *Config, flds *map[ID]StudyNote) (err error) {
 	for i := 0; i < Q_SIZE; i++ {
-		c, err := queues.GetCard(cards)
-		if c == nil || err != nil {
+		card, err := queues.GetCard(cards)
+		if card == nil || err != nil {
 			log.Fatal(err)
 			return err
 		}
-
-		again, err := StudyCard(c, db, conf, flds)
+		again, err := StudyCard(card, db, conf, flds)
 		if err != nil {
 			log.Fatal(err)
 			return err
 		}
 		if again {
+			queues.ScheduleCard(card, TodayRelative(db))
 			fmt.Println("Card added to queue")
 		}
 	}

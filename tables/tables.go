@@ -23,6 +23,7 @@ type newConf struct {
 type reviewStruct struct {
 	HardFactor float64
 	EasyFactor float64
+	EasyBonus  float64
 }
 
 type lapseStruct struct {
@@ -44,6 +45,7 @@ var CONFIG = Config{
 	Review: reviewStruct{
 		HardFactor: 1.2,
 		EasyFactor: 2.5,
+		EasyBonus:  1.3,
 	},
 	Lapse: lapseStruct{
 		Delays: []int{10},

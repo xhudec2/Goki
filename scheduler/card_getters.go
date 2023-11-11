@@ -31,7 +31,7 @@ func (queues *Scheduler) GetCard(cards *Table[Card]) (card *Card, err error) {
 		return card, nil
 	}
 
-	card, err = pop(queues.Repeat)
+	card, err = pop(queues.Review)
 	if err == nil {
 		return card, nil
 	}

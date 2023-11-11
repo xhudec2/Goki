@@ -2,6 +2,7 @@ package tables
 
 import (
 	"log"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -59,31 +60,40 @@ func (card *Card) updateLrnCard(grade int, db *gorm.DB, config *Config) (resched
 }
 
 func (card *Card) updateRevCard(grade int, db *gorm.DB, config *Config) {
+	var factor float64
 	switch grade {
 	case AGAIN:
-		card.revLapse()
+		card.revLapse(config)
+		return
 	case HARD:
-		card.Ivl = int(float64(card.Ivl) * config.Review.HardFactor)
-		card.Due = TodayRelative(db) + card.Ivl/1000
+		factor = config.Review.HardFactor
 	case GOOD:
-		card.Ivl = int(float64(card.Ivl) * config.Review.EasyFactor)
-		card.Due = TodayRelative(db) + card.Ivl/1000
+		factor = config.Review.EasyFactor
 	case EASY:
+		factor = config.Review.EasyFactor + config.Review.EasyBonus
 	default:
 		log.Fatal("Invalid grade")
 	}
+	card.Ivl = int(float64(card.Ivl) * factor)
+	card.Due = TodayRelative(db) + card.Ivl/1000
 }
 
 func (card *Card) graduateCard(level int, db *gorm.DB, config *Config) {
 	card.Queue = REVIEW
 	card.Type = REVIEW
-	card.Factor = config.New.Factor
+	card.Factor = config.New.Factor - 200*card.Lapses
 	card.Due = TodayRelative(db) + config.New.Ints[level]
-	card.Ivl = config.New.Ints[level] - 200*card.Lapses
+	card.Ivl = 1
 }
 
-func (card *Card) revLapse() {
+func (card *Card) revLapse(config *Config) {
+	now := int(time.Now().Unix())
 
+	card.Lapses++
+	card.Ivl = 0
+	card.Queue = LEARNING
+	card.Type = LEARNING
+	card.Due = now + config.Lapse.Delays[0]*MINUTE
 }
 
 func (card *Card) UpdateCard(grade int, db *gorm.DB, config *Config) (addToQ bool) {

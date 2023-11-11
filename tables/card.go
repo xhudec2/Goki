@@ -50,14 +50,13 @@ const (
 const CARD_DELIMITER = "\x1f"
 
 func StudyCard(card *Card, db *gorm.DB, conf *Config, flds *map[ID]StudyNote) (bool, error) {
-	// TODO: unfinished, only prints the card for now
-	// It should also change the db based on the "grade" given to the card while studying
-	// return the grade as well to know where to store the card next
 
+	fmt.Println("Again: 1, Hard: 2, Good: 3, Easy: 4")
+	fmt.Println()
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println(">", (*flds)[card.ID].Front)
 	scanner.Scan()
-	_ = scanner.Text() //empty line
+	_ = scanner.Text()
 
 	fmt.Println((*flds)[card.ID].Back)
 	fmt.Print("Grade: ")
@@ -66,7 +65,6 @@ func StudyCard(card *Card, db *gorm.DB, conf *Config, flds *map[ID]StudyNote) (b
 	if err != nil {
 		return false, err
 	}
-	// updateCard
 
 	return card.UpdateCard(grade, db, conf), nil
 }
