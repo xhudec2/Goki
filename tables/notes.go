@@ -46,6 +46,8 @@ func GetNoteIDs(cardIDs []ID, db *gorm.DB, nids *[]ID) (err error) {
 	return
 }
 
+const CARD_DELIMITER = "\x1f"
+
 func GetFlds(cardIDs *[]ID, db *gorm.DB, flds *map[ID]StudyNote) (err error) {
 
 	type loader struct {

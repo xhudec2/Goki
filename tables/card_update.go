@@ -1,5 +1,7 @@
 package tables
 
+// Logic behind updates is the same as in the original Anki SRS algorithm
+
 import (
 	"log"
 	"time"
@@ -17,6 +19,7 @@ const (
 func (card *Card) updateNewCard(grade int, db *gorm.DB, config *Config) {
 	card.Queue = LEARNING
 	card.Type = LEARNING
+	card.Factor = config.New.Factor
 	switch grade {
 	case AGAIN:
 		card.Due = config.New.Delays[0] * MINUTE
@@ -29,34 +32,32 @@ func (card *Card) updateNewCard(grade int, db *gorm.DB, config *Config) {
 	default:
 		log.Fatal("Invalid grade")
 	}
-	card.Left = 2000 + len(config.New.Delays)
+	card.Left = len(config.New.Delays)*1000 + len(config.New.Delays)
 }
 
-func (card *Card) updateLrnCard(grade int, db *gorm.DB, config *Config) (reschedule bool) {
-	reschedule = true
+func (card *Card) updateLrnCard(grade int, db *gorm.DB, config *Config) {
+	index := len(config.New.Delays) - 1 - card.Left/1000
 	switch grade {
 	case AGAIN:
-		// card is reset and needed to be studied from the beginning
-		card.Left = 2000 + card.Left%1000
+		// go to the beginning
+		card.Left = len(config.New.Delays) + card.Left%1000
 		card.Due = MINUTE
 	case HARD:
-		card.Due = config.Lapse.Delays[0] * MINUTE
-		// add more
+		// go back one step
+		card.Left += 1000
+		card.Due = config.New.Delays[index-1] * MINUTE
 	case GOOD:
-		card.Left--
+		card.Left -= 1001
 		if card.Left%1000 <= 0 {
 			card.graduateCard(0, db, config)
-			reschedule = false
 		} else {
-			card.Due = config.New.Delays[card.Left%1000-1] * MINUTE
+			card.Due = config.New.Delays[index] * MINUTE
 		}
 	case EASY:
 		card.graduateCard(1, db, config)
-		reschedule = false
 	default:
 		log.Fatal("Invalid grade")
 	}
-	return
 }
 
 func (card *Card) updateRevCard(grade int, db *gorm.DB, config *Config) {
@@ -66,38 +67,38 @@ func (card *Card) updateRevCard(grade int, db *gorm.DB, config *Config) {
 		card.revLapse(config)
 		return
 	case HARD:
-		factor = config.Review.HardFactor
+		factor = 1 - config.Review.HardFactor
 	case GOOD:
-		factor = config.Review.EasyFactor
+		factor = 0
 	case EASY:
-		factor = config.Review.EasyFactor + config.Review.EasyBonus
+		factor = 1 - config.Review.EasyBonus
 	default:
 		log.Fatal("Invalid grade")
 	}
-	card.Ivl = int(float64(card.Ivl) * factor)
+	card.Factor += int(factor * 1000)
+	card.Ivl = int(float64(card.Ivl) * float64(card.Factor) / 1000)
 	card.Due = TodayRelative(db) + card.Ivl
 }
 
 func (card *Card) graduateCard(level int, db *gorm.DB, config *Config) {
 	card.Queue = REVIEW
 	card.Type = REVIEW
-	card.Factor = config.New.Factor - 200*card.Lapses
-	card.Due = TodayRelative(db) + config.New.Ints[level]
-	card.Ivl = 1
+	card.Ivl = config.New.Ints[level]
+	card.Due = TodayRelative(db) + card.Ivl
 }
 
 func (card *Card) revLapse(config *Config) {
 	now := int(time.Now().Unix())
 
 	card.Lapses++
-	card.Ivl = 0
+	card.Ivl = int(float64(card.Ivl) * config.Lapse.Mult)
 	card.Queue = LEARNING
 	card.Type = LEARNING
 
 	card.Due = now + config.Lapse.Delays[0]*MINUTE
 }
 
-func (card *Card) UpdateCard(grade int, db *gorm.DB, config *Config) (addToQ bool) {
+func (card *Card) UpdateCard(grade int, db *gorm.DB, config *Config) {
 	card.Reps += 1
 	switch card.Queue {
 	case NEW:
@@ -108,5 +109,4 @@ func (card *Card) UpdateCard(grade int, db *gorm.DB, config *Config) (addToQ boo
 		card.updateRevCard(grade, db, config)
 	}
 	db.Model(Card{}).Where("id = ?", card.ID).Updates(*card)
-	return
 }

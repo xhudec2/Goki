@@ -19,6 +19,8 @@ func pop(q *q.PriorityQueue) (*Card, error) {
 	return card, nil
 }
 
+// for now, it cycles cards sequentially,
+// the order of Learing and Review could be randomized
 func (queues *Scheduler) GetCard(cards *Table[Card]) (card *Card, err error) {
 
 	card, err = pop(queues.New)

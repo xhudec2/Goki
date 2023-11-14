@@ -1,7 +1,6 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
 	. "project/tables"
 
@@ -14,11 +13,6 @@ type Attr_tuple struct {
 }
 
 type UpdatedAttributes []Attr_tuple
-
-func DB_update(db *sql.DB) {
-	// TODO
-	// will update the database on startup, check dates and due attrs
-}
 
 func Insert_card(db *gorm.DB, card Card) (err error) {
 	result := db.Create(&card)

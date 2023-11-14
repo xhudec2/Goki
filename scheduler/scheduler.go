@@ -17,11 +17,12 @@ type Scheduler struct {
 	Review  *q.PriorityQueue
 }
 
-const Q_SIZE = 32 // Q_SIZE == deck card limit ?
+const Q_SIZE = 64
 const DEFAULT_WHERE = ""
-const COLLAPSE_TIME = 1200
+const COLLAPSE_TIME = 1200 // the time a card can be studied in advance
 
 func InitScheduler() (qs *Scheduler) {
+
 	cmp := func(a, b interface{}) int {
 		card := a.(*Card)
 		other := b.(*Card)
@@ -32,6 +33,7 @@ func InitScheduler() (qs *Scheduler) {
 		}
 		return 0
 	}
+
 	return &Scheduler{
 		New:     q.NewPriorityQueueCap(cmp, Q_SIZE),
 		Learing: q.NewPriorityQueueCap(cmp, Q_SIZE),
@@ -41,22 +43,22 @@ func InitScheduler() (qs *Scheduler) {
 
 func (queues *Scheduler) ScheduleCard(card *Card, today int) bool {
 	switch card.Queue {
-	case 0:
+	case NEW:
 		queues.New.Push(card)
-	case 1, 3:
+	case LEARNING, USER_SUSPENDED:
 		if card.Due > int(time.Now().Unix())*1000+COLLAPSE_TIME {
 			return false
 		}
 		queues.Learing.Push(card)
-	case 2:
+	case REVIEW:
 		if card.Due > today {
 			return false
 		}
 		queues.Review.Push(card)
-	case -1:
-		fmt.Println("Suspended card: ", card.Queue)
+	case SUSPENDED:
+		fmt.Println("Suspended card: ", card.ID)
 	default:
-		log.Fatal("incorrect card_q: ", card.Queue)
+		log.Fatal("invalid card queue: ", card.Queue)
 	}
 	return true
 }
@@ -80,13 +82,13 @@ func (queues *Scheduler) Study(cards *Table[Card], db *gorm.DB, conf *Config, fl
 			log.Fatal(err)
 			return err
 		}
-		again, err := StudyCard(card, db, conf, flds)
+		err = StudyCard(card, db, conf, flds)
 		if err != nil {
 			log.Fatal(err)
 			return err
 		}
-		if again {
-			queues.ScheduleCard(card, TodayRelative(db))
+		if queues.ScheduleCard(card, TodayRelative(db)) {
+			// only a debug print
 			fmt.Println("Card added to queue")
 		}
 	}

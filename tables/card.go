@@ -35,21 +35,20 @@ func (c Card) GetID() ID {
 }
 
 const (
+	SUSPENDED      = -1
 	NEW            = 0
 	LEARNING       = 1
 	REVIEW         = 2
 	USER_SUSPENDED = 3
-	SUSPENDED      = -1
 )
+
 const (
-	DAY    = 86400
 	MINUTE = 60
 	HOUR   = 3600
+	DAY    = 86400
 )
 
-const CARD_DELIMITER = "\x1f"
-
-func StudyCard(card *Card, db *gorm.DB, conf *Config, flds *map[ID]StudyNote) (bool, error) {
+func StudyCard(card *Card, db *gorm.DB, conf *Config, flds *map[ID]StudyNote) (err error) {
 
 	fmt.Println("Again: 1, Hard: 2, Good: 3, Easy: 4")
 	fmt.Println()
@@ -63,8 +62,8 @@ func StudyCard(card *Card, db *gorm.DB, conf *Config, flds *map[ID]StudyNote) (b
 	scanner.Scan()
 	grade, err := strconv.Atoi(scanner.Text())
 	if err != nil {
-		return false, err
+		return
 	}
-
-	return card.UpdateCard(grade, db, conf), nil
+	card.UpdateCard(grade, db, conf)
+	return
 }

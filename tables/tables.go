@@ -14,43 +14,6 @@ type ID uint64
 // Most of these are unused, only here not to break the code
 
 // it should have more fields, these are good for now
-type newConf struct {
-	Delays []int
-	Ints   []int
-	Factor int
-}
-
-type reviewStruct struct {
-	HardFactor float64
-	EasyFactor float64
-	EasyBonus  float64
-}
-
-type lapseStruct struct {
-	Delays []int
-}
-
-type Config struct {
-	New    newConf
-	Review reviewStruct
-	Lapse  lapseStruct
-}
-
-var CONFIG = Config{
-	New: newConf{
-		Delays: []int{1, 10},
-		Ints:   []int{1, 4},
-		Factor: 2500,
-	},
-	Review: reviewStruct{
-		HardFactor: 1.2,
-		EasyFactor: 2.5,
-		EasyBonus:  1.3,
-	},
-	Lapse: lapseStruct{
-		Delays: []int{10},
-	},
-}
 
 type Col struct {
 	ID     ID `gorm:"primaryKey;autoCreateTime:milli"`
@@ -68,17 +31,8 @@ type Col struct {
 	Tags   string
 }
 
-type Deck struct {
-	ID        ID `gorm:"primaryKey;autoCreateTime:milli"`
-	Name      string
-	MtimeSecs int
-	Usn       int
-	Common    []byte
-	Kind      []byte
-}
-
-func (d Deck) GetID() ID {
-	return ID(d.ID)
+func (c Col) GetID() ID {
+	return ID(c.ID)
 }
 
 func TodayRelative(db *gorm.DB) int {
