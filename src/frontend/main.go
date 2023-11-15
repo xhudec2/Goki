@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	DrawWindow()
+	Draw()
 }
