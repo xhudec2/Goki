@@ -13,9 +13,9 @@ import (
 	"gorm.io/gorm"
 )
 
-const DB_TEMPLATE_PATH = "../../db_media/template.anki2"
-const MEDIA_TEMPLATE_PATH = "../../db_media/media.template.db2"
-const MAIN_DB = "../../db_media/Anki2/User 1/collection.anki2"
+const DB_TEMPLATE_PATH = "../db_media/template.anki2"
+const MEDIA_TEMPLATE_PATH = "../db_media/media.template.db2"
+const MAIN_DB = "../db_media/Anki2/User 1/collection.anki2"
 
 func ExportDB(decks string, name string) (err error) {
 	apkgExport, err := os.Create(name + ".apkg")

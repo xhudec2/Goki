@@ -23,7 +23,7 @@ func Insert_card(db *gorm.DB, card Card) (err error) {
 	return nil
 }
 
-func UpdateCard(cardID int, db *gorm.DB, attrs []UpdatedAttributes) error {
+func UpdateCard(cardID ID, db *gorm.DB, attrs []UpdatedAttributes) error {
 	result := db.Model(&Card{}).Where("id = ?", cardID).Updates(attrs)
 	if result.Error != nil {
 		fmt.Printf("Error updating card %d, err: %v", cardID, result.Error)
@@ -32,7 +32,7 @@ func UpdateCard(cardID int, db *gorm.DB, attrs []UpdatedAttributes) error {
 	return nil
 }
 
-func DeleteCard(cardID int, db *gorm.DB) error {
+func DeleteCard(cardID ID, db *gorm.DB) error {
 	result := db.Delete(&Card{}, cardID)
 	if result.Error != nil {
 		fmt.Printf("Error deleting note %d, err: %v", cardID, result.Error)
@@ -41,7 +41,7 @@ func DeleteCard(cardID int, db *gorm.DB) error {
 	return nil
 }
 
-func DeleteNote(noteID int, db *gorm.DB) error {
+func DeleteNote(noteID ID, db *gorm.DB) error {
 	result := db.Delete(&Note{}, noteID)
 	if result.Error != nil {
 		fmt.Printf("Error deleting note %d, err: %v", noteID, result.Error)

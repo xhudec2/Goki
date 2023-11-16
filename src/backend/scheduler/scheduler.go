@@ -75,22 +75,16 @@ func (queues *Scheduler) FillScheduler(cards *Table[Card], today int) (IDsPtr *[
 	return
 }
 
-func (queues *Scheduler) Study(cards *Table[Card], db *gorm.DB, conf *Config, flds *map[ID]StudyNote) (err error) {
-	for i := 0; i < Q_SIZE; i++ {
-		card, err := queues.GetCard(cards)
-		if card == nil || err != nil {
-			log.Fatal(err)
-			return err
-		}
-		err = StudyCard(card, db, conf, flds)
-		if err != nil {
-			log.Fatal(err)
-			return err
-		}
-		if queues.ScheduleCard(card, TodayRelative(db)) {
-			// only a debug print
-			fmt.Println("Card added to queue")
-		}
+type StudyFunction func(card *Card, db *gorm.DB, conf *Config, flds *map[ID]StudyNote)
+
+func (queues *Scheduler) Study(db *gorm.DB, conf *Config, flds *map[ID]StudyNote, studyFunc StudyFunction) (err error) {
+
+	card, err := queues.GetCard()
+
+	if card == nil || err != nil {
+		log.Fatal(err)
+		return err
 	}
+	studyFunc(card, db, conf, flds)
 	return
 }
