@@ -49,3 +49,12 @@ func DeleteNote(noteID ID, db *gorm.DB) error {
 	}
 	return nil
 }
+
+func AddNewCard(did ID, front string, back string, db *gorm.DB) {
+	flds := front + "\x1f" + back
+	note := Note{Flds: flds}
+	db.Create(&note)
+
+	card := Card{Nid: note.ID, Did: did}
+	db.Create(&card)
+}

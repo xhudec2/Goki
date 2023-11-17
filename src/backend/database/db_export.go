@@ -16,6 +16,7 @@ import (
 const DB_TEMPLATE_PATH = "../db_media/template.anki2"
 const MEDIA_TEMPLATE_PATH = "../db_media/media.template.db2"
 const MAIN_DB = "../db_media/Anki2/User 1/collection.anki2"
+const CVUT_DECK = "../db_media/CVUT deck/collection.anki21"
 
 func ExportDB(decks string, name string) (err error) {
 	apkgExport, err := os.Create(name + ".apkg")
@@ -52,7 +53,7 @@ func ExportDB(decks string, name string) (err error) {
 }
 
 func CopyDatabase(source *gorm.DB, target *gorm.DB) error {
-	if err := ImportDB[Deck](source, target, "decks"); err != nil {
+	if err := ImportDB[DeckTable](source, target, "decks"); err != nil {
 		fmt.Println("Error importing decks:", err)
 		log.Fatal(err)
 		return err

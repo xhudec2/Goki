@@ -11,13 +11,13 @@ type Theme struct{}
 
 func (m Theme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
 	switch name {
-	case theme.ColorNameButton:
-		return color.RGBA{65, 65, 65, 255}
-	case theme.ColorNameHover:
+	case theme.ColorNameButton, theme.ColorNameSelection, theme.ColorNameInputBackground:
 		return color.RGBA{70, 70, 70, 255}
+	case theme.ColorNameHover:
+		return color.RGBA{65, 65, 65, 255}
 	case theme.ColorNameShadow:
 		return color.RGBA{0, 0, 0, 0}
-	case theme.ColorNameForeground:
+	case theme.ColorNameForeground, theme.ColorNamePlaceHolder:
 		return color.White
 	default:
 		return color.RGBA{55, 55, 55, 255}

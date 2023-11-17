@@ -3,6 +3,8 @@ package window
 import (
 	"fmt"
 	"image/color"
+	"src/backend/database"
+	"src/backend/tables"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -23,13 +25,16 @@ func CreateDeck(app fyne.App) {
 	w.Show()
 }
 
-func StudyDeck(data *AppData, index int) {
-	deck := (*data.Decks)[index]
+func ShowDeckMenu(data *Data, deck *tables.Deck) {
 	var content *fyne.Container
+	err := database.GetDeckCardData(deck, data.StudyData.DB)
+	if err != nil {
+		fmt.Println(err)
+	}
 	if deck.New+deck.Learn+deck.Due == 0 {
-		content = nothingToStudy(data)
+		content = NothingToStudy(data)
 	} else {
-		content = showDeck(data, index)
+		content = showDeck(data, deck)
 	}
 	data.Window.SetContent(content)
 	data.Window.Show()
@@ -41,19 +46,24 @@ func drawDeck(name string) *fyne.Container {
 	)
 }
 
-func deckMenu(deck *Deck) *fyne.Container {
-	labels := map[string]string{
-		"New":   fmt.Sprintf("%d", deck.New),
-		"Learn": fmt.Sprintf("%d", deck.Learn),
-		"Due":   fmt.Sprintf("%d", deck.Due),
+func deckMenu(deck *tables.Deck) *fyne.Container {
+	labels := []string{
+		"New",
+		"Learn",
+		"Due",
+	}
+	values := []string{
+		fmt.Sprintf("%d", deck.New),
+		fmt.Sprintf("%d", deck.Learn),
+		fmt.Sprintf("%d", deck.Due),
 	}
 	deckData := container.NewGridWithRows(3)
-	for key, value := range labels {
+	for i := range labels {
 		deckData.Add(
 			container.NewHBox(
-				widget.NewLabel(key),
+				widget.NewLabel(labels[i]),
 				layout.NewSpacer(),
-				widget.NewLabel(value),
+				widget.NewLabel(values[i]),
 			),
 		)
 	}
@@ -70,24 +80,27 @@ func deckMenu(deck *Deck) *fyne.Container {
 	)
 }
 
-func nothingToStudy(data *AppData) *fyne.Container {
+func NothingToStudy(data *Data) *fyne.Container {
 	return container.NewVBox(
 		MenuButtons(data),
 		layout.NewSpacer(),
 		container.NewCenter(
 			widget.NewLabel("Nothing to study! Come back later."),
 		),
+		container.NewCenter(
+			widget.NewButton("Return to main menu", func() { Draw(data) }),
+		),
 		layout.NewSpacer(),
 	)
 }
 
-func showDeck(data *AppData, index int) *fyne.Container {
+func showDeck(data *Data, deck *tables.Deck) *fyne.Container {
 	return container.NewVBox(
 		MenuButtons(data),
 		layout.NewSpacer(),
-		container.NewCenter(deckMenu(&(*data.Decks)[index])),
+		container.NewCenter(deckMenu(deck)),
 		layout.NewSpacer(),
-		container.NewCenter(widget.NewButton("Study Deck", func() { CycleCards(data, index) })),
+		container.NewCenter(widget.NewButton("Study Deck", func() { CycleDeck(data, deck) })),
 		layout.NewSpacer(),
 	)
 }

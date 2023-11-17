@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"fmt"
+	"log"
 	. "src/backend/tables"
 
 	q "github.com/daviddengcn/go-villa"
@@ -36,5 +37,6 @@ func (queues *Scheduler) GetCard() (card *Card, err error) {
 	if err == nil {
 		return card, nil
 	}
+	log.Println("no cards in queue")
 	return nil, nil
 }

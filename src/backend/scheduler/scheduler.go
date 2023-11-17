@@ -17,6 +17,17 @@ type Scheduler struct {
 	Review  *q.PriorityQueue
 }
 
+type StudyFunction func(*Card, *StudyData)
+
+type StudyData struct {
+	DB        *gorm.DB
+	Decks     *Decks
+	Flds      *map[ID]StudyNote
+	Scheduler *Scheduler
+	StudyFunc StudyFunction
+	Conf      *Config
+}
+
 const Q_SIZE = 64
 const DEFAULT_WHERE = ""
 const COLLAPSE_TIME = 1200 // the time a card can be studied in advance
@@ -75,16 +86,14 @@ func (queues *Scheduler) FillScheduler(cards *Table[Card], today int) (IDsPtr *[
 	return
 }
 
-type StudyFunction func(card *Card, db *gorm.DB, conf *Config, flds *map[ID]StudyNote)
-
-func (queues *Scheduler) Study(db *gorm.DB, conf *Config, flds *map[ID]StudyNote, studyFunc StudyFunction) (err error) {
+func (queues *Scheduler) Study(data *StudyData) (err error) {
 
 	card, err := queues.GetCard()
 
-	if card == nil || err != nil {
+	if err != nil {
 		log.Fatal(err)
 		return err
 	}
-	studyFunc(card, db, conf, flds)
+	data.StudyFunc(card, data)
 	return
 }
