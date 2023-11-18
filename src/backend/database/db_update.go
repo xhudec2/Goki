@@ -58,3 +58,23 @@ func AddNewCard(did ID, front string, back string, db *gorm.DB) {
 	card := Card{Nid: note.ID, Did: did}
 	db.Create(&card)
 }
+
+func AddNewDeck(name string, db *gorm.DB) {
+	defaultBytes := []byte{0, 0, 0, 0, 0, 0, 0, 0}
+	deck := DeckTable{Name: name, Common: defaultBytes, Kind: defaultBytes}
+	db.Table("decks").Create(&deck)
+}
+
+func DeleteDeck(name string, db *gorm.DB) {
+	decks := Table[DeckTable]{}
+	DBGetter(db, &decks, "decks", fmt.Sprintf("name = '%s'", name))
+	id := decks[0].ID
+	db.Table("decks").Where("name = ?", name).Delete(&DeckTable{})
+
+	cards := Table[Card]{}
+	DBGetter(db, &cards, "cards", fmt.Sprintf("did = %d", id))
+	for _, card := range cards {
+		db.Table("notes").Where("nid = ?", card.Nid).Delete(&Note{})
+	}
+	db.Table("cards").Where("did = ?", id).Delete(&Card{})
+}

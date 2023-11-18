@@ -13,13 +13,99 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func CreateDeck(app fyne.App) {
-	w := app.NewWindow("Create Deck")
-	w.Resize(fyne.NewSize(600, 450))
-	w.CenterOnScreen()
-	w.SetContent(
+func CreateDeck(data *Data) {
+	w := data.App.NewWindow("Create Deck")
+	bg := canvas.NewRectangle(color.RGBA{0, 0, 0, 0})
+	bg.SetMinSize(fyne.NewSize(400, 200))
+	bg.CornerRadius = 15
+
+	entryRect := canvas.NewRectangle(color.RGBA{0, 0, 0, 0})
+	entryRect.SetMinSize(fyne.NewSize(300, 0))
+	entry := widget.NewEntry()
+	entry.SetPlaceHolder("Enter Text...")
+
+	entryStack := container.NewStack(
+		entryRect,
+		entry,
+	)
+
+	s := container.NewCenter(
 		container.NewVBox(
-			widget.NewLabel("Create Deck"),
+			widget.NewLabel("Deck Name"),
+			container.NewHBox(
+				layout.NewSpacer(),
+				entryStack,
+				layout.NewSpacer(),
+			),
+			container.NewHBox(
+				layout.NewSpacer(),
+				widget.NewButton(
+					"Create",
+					func() {
+						database.AddNewDeck(entry.Text, data.StudyData.DB)
+						w.Close()
+						Draw(data)
+					}),
+				widget.NewButton("Close", func() { w.Close() }),
+				layout.NewSpacer(),
+			),
+		),
+	)
+
+	w.SetContent(
+		container.NewStack(
+			bg,
+			container.NewCenter(s),
+		),
+	)
+	w.Show()
+}
+
+func DeleteDeck(data *Data) {
+	w := data.App.NewWindow("Delete Deck")
+	bg := canvas.NewRectangle(color.RGBA{0, 0, 0, 0})
+	bg.SetMinSize(fyne.NewSize(400, 200))
+	bg.CornerRadius = 15
+
+	channel := make(chan string, 1)
+
+	entryRect := canvas.NewRectangle(color.RGBA{0, 0, 0, 0})
+	entryRect.SetMinSize(fyne.NewSize(300, 0))
+
+	entry := widget.NewSelect(tables.DeckNames(data.StudyData.Decks), func(s string) { channel <- s })
+
+	entryStack := container.NewStack(
+		entryRect,
+		entry,
+	)
+
+	s := container.NewCenter(
+		container.NewVBox(
+			widget.NewLabel("Deck Name"),
+			container.NewHBox(
+				layout.NewSpacer(),
+				entryStack,
+				layout.NewSpacer(),
+			),
+			container.NewHBox(
+				layout.NewSpacer(),
+				widget.NewButton(
+					"Delete",
+					func() {
+						database.DeleteDeck(<-channel, data.StudyData.DB)
+						w.Close()
+						Draw(data)
+					}),
+				widget.NewButton("Close", func() { w.Close() }),
+				layout.NewSpacer(),
+			),
+		),
+	)
+
+	w.SetContent(
+		container.NewStack(
+			bg,
+			container.NewCenter(s),
 		),
 	)
 	w.Show()

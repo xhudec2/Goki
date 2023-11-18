@@ -70,10 +70,10 @@ type DeckJSON struct {
 }
 
 type DeckTable struct {
-	ID         ID
+	ID         ID `gorm:"primaryKey;autoCreateTime:milli"`
 	Name       string
-	Mtime_secs int
-	Usn        int
+	Mtime_secs int `gorm:"autoUpdateTime"`
+	Usn        int `gorm:"default:-1"`
 	Common     []byte
 	Kind       []byte
 }

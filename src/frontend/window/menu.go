@@ -29,6 +29,12 @@ type Data struct {
 }
 
 func Draw(data *Data) {
+	decks := make(tables.Decks, 10)
+	err := database.ParseDecks(data.StudyData.DB, &decks)
+	if err != nil {
+		return
+	}
+	data.StudyData.Decks = &decks
 	data.Window.SetContent(
 		container.NewVBox(
 			MenuButtons(data),
@@ -43,14 +49,16 @@ func Draw(data *Data) {
 func MenuButtons(data *Data) *fyne.Container {
 	decksButton := widget.NewButton("Decks", func() { Draw(data) })
 	cardsButton := widget.NewButton("Add Card", func() { AddCard(data) })
-	addDeckButton := widget.NewButton("Create Deck", func() { CreateDeck(data.App) })
+	addDeckButton := widget.NewButton("Create Deck", func() { CreateDeck(data) })
+	delDeckButton := widget.NewButton("Delete Deck", func() { DeleteDeck(data) })
 	return container.NewHBox(
 		layout.NewSpacer(),
 		container.NewGridWithColumns(
-			3,
+			4,
 			decksButton,
 			addDeckButton,
 			cardsButton,
+			delDeckButton,
 		),
 		layout.NewSpacer(),
 	)

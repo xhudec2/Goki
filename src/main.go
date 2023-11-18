@@ -33,17 +33,11 @@ func main() {
 	appWindow.Resize(fyne.NewSize(800, 600))
 	appWindow.CenterOnScreen()
 
-	decks := make(tables.Decks, 10)
-	err = database.ParseDecks(db, &decks)
-	if err != nil {
-		return
-	}
 	appData := window.Data{
 		App:    app,
 		Window: appWindow,
 		StudyData: &scheduler.StudyData{
-			DB:    db,
-			Decks: &decks,
+			DB: db,
 		},
 	}
 	window.Draw(&appData)

@@ -20,66 +20,72 @@ func AddCard(data *Data) {
 	w.Resize(fyne.NewSize(600, 450))
 	w.CenterOnScreen()
 
-	frontInput := widget.NewEntry()
-	BackInput := widget.NewEntry()
-	frontInput.SetPlaceHolder("Enter text...")
-	BackInput.SetPlaceHolder("Enter text...")
+	channel := make(chan string, 1)
 
-	bg := canvas.NewRectangle(color.RGBA{0, 0, 0, 0})
-	bg.SetMinSize(fyne.NewSize(200, 50))
-
-	deck := make(chan string, 1)
-
-	deckSelect := container.NewVBox(
-		widget.NewLabel("Choose Deck"),
-		widget.NewSelect(
-			tables.DeckNames(data.StudyData.Decks),
-			func(s string) {
-				deck <- s
-			},
-		),
-	)
-
-	front := container.NewStack(
-		bg,
-		container.NewGridWithRows(
-			2,
-			widget.NewLabel("Front"),
-			frontInput,
-		),
-	)
-	back := container.NewStack(
-		bg,
-		container.NewGridWithRows(
-			2,
-			widget.NewLabel("Back"),
-			BackInput,
-		),
-	)
+	inputFields, button := inputs(data, w, channel)
 
 	w.SetContent(
 		container.NewVBox(
 			layout.NewSpacer(),
-			deckSelect,
+			deckSelection(data, channel),
 			layout.NewSpacer(),
-			container.NewHBox(
-				layout.NewSpacer(),
-				front,
-				back,
-				layout.NewSpacer(),
-			),
+			inputFields,
 			layout.NewSpacer(),
-			widget.NewButton("Add",
-				func() {
-					did := tables.GetDeckID(data.StudyData.Decks, <-deck)
-					database.AddNewCard(did, frontInput.Text, BackInput.Text, data.StudyData.DB)
-					w.Close()
-					Draw(data)
-				}),
+			button,
 			layout.NewSpacer(),
 		),
 	)
 	w.Show()
+}
+
+func inputs(data *Data, window fyne.Window, channel chan string) (*fyne.Container, *widget.Button) {
+	frontCont, front := inputWidget("Front")
+	backCont, back := inputWidget("Back")
+
+	inputFields := container.NewHBox(
+		layout.NewSpacer(),
+		frontCont,
+		backCont,
+		layout.NewSpacer(),
+	)
+	b := widget.NewButton(
+		"Add",
+		func() {
+			did := tables.GetDeckID(data.StudyData.Decks, <-channel)
+			database.AddNewCard(did, front.Text, back.Text, data.StudyData.DB)
+			window.Close()
+			Draw(data)
+		},
+	)
+	return inputFields, b
+}
+
+func deckSelection(data *Data, channel chan string) *fyne.Container {
+	return container.NewVBox(
+		widget.NewLabel("Choose Deck"),
+		widget.NewSelect(
+			tables.DeckNames(data.StudyData.Decks),
+			func(s string) {
+				channel <- s
+			},
+		),
+	)
+}
+
+func inputWidget(label string) (*fyne.Container, *widget.Entry) {
+	w := widget.NewEntry()
+	w.SetPlaceHolder("Enter text...")
+	bg := canvas.NewRectangle(color.RGBA{0, 0, 0, 0})
+	bg.SetMinSize(fyne.NewSize(200, 50))
+	return container.NewStack(
+		bg,
+		container.NewGridWithRows(
+			2,
+			widget.NewLabel(label),
+			w,
+		),
+	), w
+
 }
 
 func CycleDeck(data *Data, deck *tables.Deck) {
