@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"src/backend/collation"
 	"src/backend/database"
 	"src/backend/scheduler"
@@ -14,7 +15,12 @@ import (
 
 func main() {
 	collation.RegisterCollation()
-	db, err := database.OpenDB(database.MAIN_DB)
+	home, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Println("Error getting home directory:", err)
+		return
+	}
+	db, err := database.OpenDB(home + database.MAIN_DB)
 	if err != nil {
 		return
 	}

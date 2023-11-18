@@ -16,11 +16,11 @@ type ID uint64
 // it should have more fields, these are good for now
 
 type Col struct {
-	ID     ID `gorm:"primaryKey;autoCreateTime:milli"`
-	Crt    int
+	ID     ID  `gorm:"primaryKey;autoCreateTime:milli"`
+	Crt    int `gorm:"primaryKey;autoCreateTime:milli"`
 	Mod    int `gorm:"autoUpdateTime"`
 	Scm    int
-	Ver    int
+	Ver    int `gorm:"default:18"`
 	Dty    int
 	Usn    int
 	Ls     int
