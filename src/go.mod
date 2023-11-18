@@ -1,4 +1,4 @@
-module project
+module GOki
 
 go 1.21.4
 
