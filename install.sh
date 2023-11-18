@@ -10,4 +10,4 @@ go install fyne.io/fyne/v2/cmd/fyne@latest
 
 cd src
 
-sudo ~/go/bin/fyne package -os darwin -icon ../Icon.png && ~/go/bin/fyne install -icon ../Icon.png
+sudo ~/go/bin/fyne package -os linux -icon ../Icon.png && ~/go/bin/fyne install -icon ../Icon.png
