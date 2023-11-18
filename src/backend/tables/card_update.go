@@ -3,6 +3,7 @@ package tables
 // Logic behind updates is the same as in the original Anki SRS algorithm
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -37,6 +38,7 @@ func (card *Card) updateNewCard(grade int, db *gorm.DB, config *Config) {
 
 func (card *Card) updateLrnCard(grade int, db *gorm.DB, config *Config) {
 	index := len(config.New.Delays) - 1 - card.Left/1000
+	fmt.Println(index)
 	switch grade {
 	case AGAIN:
 		// go to the beginning
@@ -45,13 +47,13 @@ func (card *Card) updateLrnCard(grade int, db *gorm.DB, config *Config) {
 	case HARD:
 		// go back one step
 		card.Left += 1000
-		card.Due = config.New.Delays[index-1] * MINUTE
+		card.Due = config.New.Delays[max(index-1, 0)] * MINUTE
 	case GOOD:
 		card.Left -= 1001
 		if card.Left%1000 <= 0 {
 			card.graduateCard(0, db, config)
 		} else {
-			card.Due = config.New.Delays[index] * MINUTE
+			card.Due = config.New.Delays[max(index, 0)] * MINUTE
 		}
 	case EASY:
 		card.graduateCard(1, db, config)
