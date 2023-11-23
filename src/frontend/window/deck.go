@@ -13,6 +13,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+// CretateDeck and DeleteDeck should be refactored a bit
+
 func CreateDeck(data *Data) {
 	w := data.App.NewWindow("Create Deck")
 	bg := canvas.NewRectangle(color.RGBA{0, 0, 0, 0})
