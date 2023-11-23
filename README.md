@@ -1,3 +1,5 @@
 # GoProject
 
-To install, you need GO 1.21.3 or newer
+An Anki style app written in Go
+
+//TBD

@@ -131,13 +131,15 @@ func initDeckData(data *Data, deck *tables.Deck) {
 func studyCard(data *Data, card *tables.Card) {
 
 	cardFront := (*data.StudyData.Flds)[card.ID].Front
+	cardFrontText := canvas.NewText(cardFront, color.White)
+	cardFrontText.TextSize = 20
 
 	data.Window.SetContent(
 		container.NewVBox(
 			MenuButtons(data),
 			layout.NewSpacer(),
 			container.NewCenter(
-				widget.NewLabel(cardFront),
+				cardFrontText,
 			),
 			layout.NewSpacer(),
 			container.NewCenter(
@@ -156,12 +158,15 @@ func gradeClick(data *Data, card *tables.Card, grade int) {
 func flipClick(data *Data, card *tables.Card) {
 	cardBack := (*data.StudyData.Flds)[card.ID].Back
 
+	cardBackText := canvas.NewText(cardBack, color.White)
+	cardBackText.TextSize = 20
+
 	data.Window.SetContent(
 		container.NewVBox(
 			MenuButtons(data),
 			layout.NewSpacer(),
 			container.NewCenter(
-				widget.NewLabel(cardBack),
+				cardBackText,
 			),
 			layout.NewSpacer(),
 			gradingButtons(data, card),

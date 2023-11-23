@@ -5,7 +5,6 @@ import (
 	"log"
 	. "src/backend/database"
 	. "src/backend/tables"
-	"time"
 
 	q "github.com/daviddengcn/go-villa"
 	"gorm.io/gorm"
@@ -57,9 +56,6 @@ func (queues *Scheduler) ScheduleCard(card *Card, today int) bool {
 	case NEW:
 		queues.New.Push(card)
 	case LEARNING, USER_SUSPENDED:
-		if card.Due > int(time.Now().Unix())*1000+COLLAPSE_TIME {
-			return false
-		}
 		queues.Learing.Push(card)
 	case REVIEW:
 		if card.Due > today {

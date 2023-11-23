@@ -65,6 +65,11 @@ func GetFlds(cardIDs *[]ID, db *gorm.DB, flds *map[ID]StudyNote) (err error) {
 	}
 	for _, loaded := range load {
 		splitted := strings.Split(loaded.Flds, CARD_DELIMITER)
+		if len(splitted) != 2 {
+			log.Println("Invalid flds", loaded.Flds)
+			(*flds)[loaded.ID] = StudyNote{"", ""}
+			continue
+		}
 		(*flds)[loaded.ID] = StudyNote{splitted[0], splitted[1]}
 	}
 	return

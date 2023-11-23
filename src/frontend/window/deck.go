@@ -144,6 +144,7 @@ func deckMenu(deck *tables.Deck) *fyne.Container {
 		fmt.Sprintf("%d", deck.Due),
 	}
 	deckData := container.NewGridWithRows(3)
+
 	for i := range labels {
 		deckData.Add(
 			container.NewHBox(

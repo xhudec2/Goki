@@ -3,6 +3,7 @@ package window
 import (
 	"fmt"
 	"image/color"
+	"sort"
 	"src/backend/database"
 	"src/backend/scheduler"
 	"src/backend/tables"
@@ -104,8 +105,17 @@ func decksList(data *Data) *fyne.Container {
 	decks := data.StudyData.Decks
 
 	buttons := container.NewVBox()
+	sortedLabels := []tables.ID{}
 	for index := range *decks {
 		deck := (*decks)[index]
+		sortedLabels = append(sortedLabels, deck.ID)
+	}
+	sort.Slice(sortedLabels, func(i, j int) bool {
+		return (*decks)[sortedLabels[i]].Name < (*decks)[sortedLabels[j]].Name
+	})
+
+	for _, label := range sortedLabels {
+		deck := (*decks)[label]
 		canv := canvas.NewRectangle(color.RGBA{0, 0, 0, 0})
 		canv.SetMinSize(fyne.NewSize(200, 10))
 		buttons.Add(deckListEntry(data, &deck, canv))

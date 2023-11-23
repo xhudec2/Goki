@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"time"
 
 	. "src/backend/tables"
 
@@ -139,9 +138,6 @@ func GetDeckCardData(deck *Deck, db *gorm.DB) error {
 		case NEW:
 			deck.New++
 		case LEARNING:
-			if int(time.Now().Unix())*1000+1200 > card.Due {
-				continue
-			}
 			deck.Learn++
 		case REVIEW:
 			if TodayRelative(db) < card.Due {
