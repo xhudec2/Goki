@@ -2,7 +2,7 @@ package scheduler
 
 import (
 	"fmt"
-	. "src/backend/database"
+	"log"
 	. "src/backend/tables"
 
 	q "github.com/daviddengcn/go-villa"
@@ -21,7 +21,7 @@ func pop(q *q.PriorityQueue) (*Card, error) {
 
 // for now, it cycles cards sequentially,
 // the order of Learing and Review could be randomized
-func (queues *Scheduler) GetCard(cards *Table[Card]) (card *Card, err error) {
+func (queues *Scheduler) GetCard() (card *Card, err error) {
 
 	card, err = pop(queues.New)
 	if err == nil {
@@ -37,5 +37,6 @@ func (queues *Scheduler) GetCard(cards *Table[Card]) (card *Card, err error) {
 	if err == nil {
 		return card, nil
 	}
-	return nil, fmt.Errorf("no cards in queues")
+	log.Println("no cards in queue")
+	return nil, nil
 }

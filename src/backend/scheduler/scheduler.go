@@ -5,7 +5,6 @@ import (
 	"log"
 	. "src/backend/database"
 	. "src/backend/tables"
-	"time"
 
 	q "github.com/daviddengcn/go-villa"
 	"gorm.io/gorm"
@@ -15,6 +14,17 @@ type Scheduler struct {
 	New     *q.PriorityQueue
 	Learing *q.PriorityQueue
 	Review  *q.PriorityQueue
+}
+
+type StudyFunction func(*Card, *StudyData)
+
+type StudyData struct {
+	DB        *gorm.DB
+	Decks     *Decks
+	Flds      *map[ID]StudyNote
+	Scheduler *Scheduler
+	StudyFunc StudyFunction
+	Conf      *Config
 }
 
 const Q_SIZE = 64
@@ -46,9 +56,6 @@ func (queues *Scheduler) ScheduleCard(card *Card, today int) bool {
 	case NEW:
 		queues.New.Push(card)
 	case LEARNING, USER_SUSPENDED:
-		if card.Due > int(time.Now().Unix())*1000+COLLAPSE_TIME {
-			return false
-		}
 		queues.Learing.Push(card)
 	case REVIEW:
 		if card.Due > today {
@@ -75,22 +82,14 @@ func (queues *Scheduler) FillScheduler(cards *Table[Card], today int) (IDsPtr *[
 	return
 }
 
-func (queues *Scheduler) Study(cards *Table[Card], db *gorm.DB, conf *Config, flds *map[ID]StudyNote) (err error) {
-	for i := 0; i < Q_SIZE; i++ {
-		card, err := queues.GetCard(cards)
-		if card == nil || err != nil {
-			log.Fatal(err)
-			return err
-		}
-		err = StudyCard(card, db, conf, flds)
-		if err != nil {
-			log.Fatal(err)
-			return err
-		}
-		if queues.ScheduleCard(card, TodayRelative(db)) {
-			// only a debug print
-			fmt.Println("Card added to queue")
-		}
+func (queues *Scheduler) Study(data *StudyData) (err error) {
+
+	card, err := queues.GetCard()
+
+	if err != nil {
+		log.Fatal(err)
+		return err
 	}
+	data.StudyFunc(card, data)
 	return
 }

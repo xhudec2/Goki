@@ -1,9 +1,6 @@
 package tables
 
-import (
-	"encoding/json"
-	"fmt"
-)
+import "log"
 
 type newConf struct {
 	Delays []int
@@ -72,32 +69,44 @@ type DeckJSON struct {
 	NewLimitToday    int
 }
 
+type DeckTable struct {
+	ID         ID `gorm:"primaryKey;autoCreateTime:milli"`
+	Name       string
+	Mtime_secs int `gorm:"autoUpdateTime"`
+	Usn        int `gorm:"default:-1"`
+	Common     []byte
+	Kind       []byte
+}
 type Deck struct {
-	ID   ID
-	Name string
-	Conf Config
+	ID    ID
+	Name  string
+	Conf  Config
+	New   int
+	Learn int
+	Due   int
 }
 
 type Decks map[ID]Deck
 
-func (d Deck) GetID() ID {
+func (d DeckTable) GetID() ID {
 	return ID(d.ID)
 }
 
-// unused for now
-func ParseDecks(col *Col, decks *Decks) {
-	deckStr := col.Decks
-	decksJSON := make(map[ID]DeckJSON, 8)
-	err := json.Unmarshal([]byte(deckStr), &decksJSON)
-	if err != nil {
-		fmt.Println("Error parsing JSON:", err)
-		return
-	}
-	for key := range decksJSON {
-		(*decks)[key] = Deck{
-			ID:   decksJSON[key].ID,
-			Name: decksJSON[key].Name,
-			Conf: CONFIG, // default config only for now
+func GetDeckID(decks *Decks, deckName string) ID {
+	for key := range *decks {
+		if (*decks)[key].Name == deckName {
+			return key
 		}
 	}
+
+	log.Fatal("Deck not found")
+	return 0
+}
+
+func DeckNames(decks *Decks) []string {
+	names := make([]string, 0, len(*decks))
+	for id := range *decks {
+		names = append(names, (*decks)[id].Name)
+	}
+	return names
 }
