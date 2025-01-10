@@ -1,8 +1,6 @@
 #!/bin/bash
 
-mkdir -p ~/Documents/goki
-
-cp ./db_media/collection.anki2 ./db_media/template.anki2 ./db_media/media.template.db2 ~/Documents/goki/
+cp './db_media/Anki2/User 1/collection.anki2' ./db_media/template.anki2 ./db_media/media.template.db2 .
 
 go install fyne.io/fyne/v2/cmd/fyne@latest
 
